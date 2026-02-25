@@ -89,7 +89,7 @@ async def test_depends_with_async_context_manager(mcp: FastMCP):
             cleanup_called = True
 
     @mcp.tool()
-    async def query_db(sql: str, db: str = Depends(get_database)) -> str:  # type: ignore[assignment]
+    async def query_db(sql: str, db: str = Depends(get_database)) -> str:
         return f"Executing '{sql}' on {db}"
 
     result = await mcp.call_tool("query_db", {"sql": "SELECT * FROM users"})
@@ -376,7 +376,7 @@ async def test_async_tool_context_manager_stays_open(mcp: FastMCP):
     @mcp.tool()
     async def query_data(
         query: str,
-        connection: Connection = Depends(get_connection),  # type: ignore[assignment]
+        connection: Connection = Depends(get_connection),
     ) -> str:
         assert connection.is_open
         return f"open={connection.is_open}"
@@ -390,7 +390,7 @@ async def test_async_resource_context_manager_stays_open(mcp: FastMCP):
     """Test that context manager dependencies stay open during async resource execution."""
 
     @mcp.resource("data://config")
-    async def load_config(connection: Connection = Depends(get_connection)) -> str:  # type: ignore[assignment]
+    async def load_config(connection: Connection = Depends(get_connection)) -> str:
         assert connection.is_open
         return f"open={connection.is_open}"
 
@@ -404,7 +404,7 @@ async def test_async_resource_template_context_manager_stays_open(mcp: FastMCP):
     @mcp.resource("user://{user_id}")
     async def get_user(
         user_id: str,
-        connection: Connection = Depends(get_connection),  # type: ignore[assignment]
+        connection: Connection = Depends(get_connection),
     ) -> str:
         assert connection.is_open
         return f"open={connection.is_open},user={user_id}"
@@ -420,7 +420,7 @@ async def test_async_prompt_context_manager_stays_open(mcp: FastMCP):
     @mcp.prompt()
     async def research_prompt(
         topic: str,
-        connection: Connection = Depends(get_connection),  # type: ignore[assignment]
+        connection: Connection = Depends(get_connection),
     ) -> str:
         assert connection.is_open
         return f"open={connection.is_open},topic={topic}"
@@ -463,7 +463,7 @@ async def test_connection_dependency_excluded_from_tool_schema(mcp: FastMCP):
     @mcp.tool()
     async def with_connection(
         name: str,
-        connection: Connection = Depends(get_connection),  # type: ignore[assignment]
+        connection: Connection = Depends(get_connection),
     ) -> str:
         return name
 
@@ -489,7 +489,7 @@ async def test_sync_tool_context_manager_stays_open(mcp: FastMCP):
     @mcp.tool()
     async def query_sync(
         query: str,
-        connection: Connection = Depends(get_sync_connection),  # type: ignore[assignment]
+        connection: Connection = Depends(get_sync_connection),
     ) -> str:
         assert connection.is_open
         return f"open={connection.is_open}"
@@ -513,7 +513,7 @@ async def test_sync_resource_context_manager_stays_open(mcp: FastMCP):
             conn.is_open = False
 
     @mcp.resource("data://sync")
-    async def load_sync(connection: Connection = Depends(get_sync_connection)) -> str:  # type: ignore[assignment]
+    async def load_sync(connection: Connection = Depends(get_sync_connection)) -> str:
         assert connection.is_open
         return f"open={connection.is_open}"
 
@@ -537,7 +537,7 @@ async def test_sync_resource_template_context_manager_stays_open(mcp: FastMCP):
     @mcp.resource("item://{item_id}")
     async def get_item(
         item_id: str,
-        connection: Connection = Depends(get_sync_connection),  # type: ignore[assignment]
+        connection: Connection = Depends(get_sync_connection),
     ) -> str:
         assert connection.is_open
         return f"open={connection.is_open},item={item_id}"
@@ -563,7 +563,7 @@ async def test_sync_prompt_context_manager_stays_open(mcp: FastMCP):
     @mcp.prompt()
     async def sync_prompt(
         topic: str,
-        connection: Connection = Depends(get_sync_connection),  # type: ignore[assignment]
+        connection: Connection = Depends(get_sync_connection),
     ) -> str:
         assert connection.is_open
         return f"open={connection.is_open},topic={topic}"
@@ -1014,61 +1014,52 @@ class TestTransformContextAnnotations:
             assert "session:" in result.messages[0].content.text
 
 
-class TestVendoredDI:
-    """Tests for vendored DI when docket is not installed."""
+class TestDependencyInjection:
+    """Tests for the uncalled-for DI engine."""
 
     def test_is_docket_available(self):
         """Test is_docket_available returns True when docket is installed."""
         from fastmcp.server.dependencies import is_docket_available
 
-        # In dev environment, docket should be available
         assert is_docket_available() is True
 
     def test_require_docket_passes_when_installed(self):
         """Test require_docket doesn't raise when docket is installed."""
         from fastmcp.server.dependencies import require_docket
 
-        # Should not raise
         require_docket("test feature")
 
-    def test_vendored_dependency_class_exists(self):
-        """Test vendored Dependency class is importable."""
-        from fastmcp._vendor.docket_di import Dependency, Depends
+    def test_dependency_class_exists(self):
+        """Test Dependency class is importable from uncalled_for."""
+        from uncalled_for import Dependency, Depends
 
         assert Dependency is not None
         assert Depends is not None
 
-    def test_vendored_depends_works(self):
-        """Test vendored Depends() creates proper dependency wrapper."""
-        from fastmcp._vendor.docket_di import Depends, _Depends
+    def test_depends_works(self):
+        """Test Depends() creates proper dependency wrapper."""
+        from uncalled_for import Depends, _Depends
 
         def get_value() -> str:
             return "test_value"
 
         dep = Depends(get_value)
         assert isinstance(dep, _Depends)
-        assert dep.dependency is get_value
+        assert dep.factory is get_value
 
-    async def test_depends_import_fallback(self):
+    async def test_depends_import_from_fastmcp(self):
         """Test that Depends can be imported from fastmcp.dependencies."""
-        # This tests the import path, not the actual fallback behavior
-        # since docket is always installed in dev
         from fastmcp.dependencies import Depends
 
         def get_config() -> dict:
             return {"key": "value"}
 
         dep = Depends(get_config)
-        # Should work regardless of whether docket or vendored is used
         assert dep is not None
 
-    def test_vendored_get_dependency_parameters(self):
-        """Test vendored get_dependency_parameters finds dependency defaults."""
-        from fastmcp._vendor.docket_di import (
-            Depends,
-            _Depends,
-            get_dependency_parameters,
-        )
+    def test_get_dependency_parameters(self):
+        """Test get_dependency_parameters finds dependency defaults."""
+        from uncalled_for import Depends, _Depends, get_dependency_parameters
 
         def get_db() -> str:
             return "database"
@@ -1080,7 +1071,7 @@ class TestVendoredDI:
         assert "db" in deps
         db_dep = deps["db"]
         assert isinstance(db_dep, _Depends)
-        assert db_dep.dependency is get_db
+        assert db_dep.factory is get_db
 
 
 class TestAuthDependencies:
@@ -1100,12 +1091,7 @@ class TestAuthDependencies:
 
     def test_current_access_token_is_dependency(self):
         """Test that CurrentAccessToken is a Dependency instance."""
-        # Import the Dependency class the same way the code does
-        # (docket if available, vendored otherwise)
-        try:
-            from docket.dependencies import Dependency
-        except ImportError:
-            from fastmcp._vendor.docket_di import Dependency
+        from uncalled_for import Dependency
 
         from fastmcp.server.dependencies import _CurrentAccessToken
 
@@ -1114,11 +1100,7 @@ class TestAuthDependencies:
 
     def test_token_claim_creates_dependency(self):
         """Test that TokenClaim creates a Dependency instance."""
-        # Import the Dependency class the same way the code does
-        try:
-            from docket.dependencies import Dependency
-        except ImportError:
-            from fastmcp._vendor.docket_di import Dependency
+        from uncalled_for import Dependency
 
         from fastmcp.server.dependencies import TokenClaim, _TokenClaim
 

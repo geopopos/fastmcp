@@ -1406,10 +1406,7 @@ class TestAzureOBOIntegration:
 
     def test_entra_obo_token_is_dependency_instance(self):
         """Test that EntraOBOToken is a Dependency instance."""
-        try:
-            from docket.dependencies import Dependency
-        except ImportError:
-            from fastmcp._vendor.docket_di import Dependency
+        from uncalled_for import Dependency
 
         from fastmcp.server.auth.providers.azure import _EntraOBOToken
 
