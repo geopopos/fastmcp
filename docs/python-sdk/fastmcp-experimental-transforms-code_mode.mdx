@@ -1,0 +1,68 @@
+---
+title: code_mode
+sidebarTitle: code_mode
+---
+
+# `fastmcp.experimental.transforms.code_mode`
+
+## Classes
+
+### `SandboxProvider` <sup><a href="https://github.com/PrefectHQ/fastmcp/blob/main/src/fastmcp/experimental/transforms/code_mode.py#L55" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+
+Interface for executing LLM-generated Python code in a sandbox.
+
+WARNING: The ``code`` parameter passed to ``run`` contains untrusted,
+LLM-generated Python.  Implementations MUST execute it in an isolated
+sandbox — never with plain ``exec()``.  Use ``MontySandboxProvider``
+(backed by ``pydantic-monty``) for production workloads.
+
+
+**Methods:**
+
+#### `run` <sup><a href="https://github.com/PrefectHQ/fastmcp/blob/main/src/fastmcp/experimental/transforms/code_mode.py#L64" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+run(self, code: str) -> Any
+```
+
+### `MontySandboxProvider` <sup><a href="https://github.com/PrefectHQ/fastmcp/blob/main/src/fastmcp/experimental/transforms/code_mode.py#L73" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+
+Sandbox provider backed by `pydantic-monty`.
+
+**Args:**
+- `limits`: Resource limits for sandbox execution. Supported keys\:
+``max_duration_secs`` (float), ``max_allocations`` (int),
+``max_memory`` (int), ``max_recursion_depth`` (int),
+``gc_interval`` (int).  All are optional; omit a key to
+leave that limit uncapped.
+
+
+**Methods:**
+
+#### `run` <sup><a href="https://github.com/PrefectHQ/fastmcp/blob/main/src/fastmcp/experimental/transforms/code_mode.py#L91" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+run(self, code: str) -> Any
+```
+
+### `CodeMode` <sup><a href="https://github.com/PrefectHQ/fastmcp/blob/main/src/fastmcp/experimental/transforms/code_mode.py#L125" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+
+Transform that collapses all tools into `search` + `execute` meta-tools.
+
+
+**Methods:**
+
+#### `transform_tools` <sup><a href="https://github.com/PrefectHQ/fastmcp/blob/main/src/fastmcp/experimental/transforms/code_mode.py#L162" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+transform_tools(self, tools: Sequence[Tool]) -> Sequence[Tool]
+```
+
+#### `get_tool` <sup><a href="https://github.com/PrefectHQ/fastmcp/blob/main/src/fastmcp/experimental/transforms/code_mode.py#L165" target="_blank"><Icon icon="github" style="width: 14px; height: 14px;" /></a></sup>
+
+```python
+get_tool(self, name: str, call_next: GetToolNext) -> Tool | None
+```
